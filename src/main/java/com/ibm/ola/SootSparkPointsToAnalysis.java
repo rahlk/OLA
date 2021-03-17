@@ -21,25 +21,25 @@ public class SootSparkPointsToAnalysis {
         String sootClassPath = "/Users/rkrsn/workspace/IRS/build/classes/java/main";
         String mainClass = "com.ibm.example.irs.BusinessProcess";
 
-//        /* ------------------- OPTIONS ---------------------- */
-//        try {
-//            int i=0;
-//            while (true) {
-//                if ("-cp".equals(args[i])) {
-//                    sootClassPath = args[i + 1];
-//                    i += 2;
-//                } else {
-//                    mainClass = args[i];
-//                    i++;
-//                    break;
-//                }
-//            }
-//            if (i != args.length || mainClass == null)
-//                throw new Exception();
-//        } catch (Exception e) {
-//            System.out.println("Usage: java com.ibm.ola.SimpleSoot [-cp CLASSPATH] MAIN_CLASS");
-//            System.exit(1);
-//        }
+       /* ------------------- OPTIONS ---------------------- */
+       try {
+           int i=0;
+           while (true) {
+               if ("-cp".equals(args[i])) {
+                   sootClassPath = args[i + 1];
+                   i += 2;
+               } else {
+                   mainClass = args[i];
+                   i++;
+                   break;
+               }
+           }
+           if (i != args.length || mainClass == null)
+               throw new Exception();
+       } catch (Exception e) {
+           System.out.println("Usage: java com.ibm.ola.SimpleSoot [-cp CLASSPATH] MAIN_CLASS");
+           System.exit(1);
+       }
 
         G.reset();
         Options.v().set_prepend_classpath(true);
