@@ -1,2 +1,2 @@
-# OLA
-Object Lifecycle Analysis
+# OLA: Object Lifecycle Analyzer
+
