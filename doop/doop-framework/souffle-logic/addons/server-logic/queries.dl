@@ -1,0 +1,367 @@
+// String constants are bare strings so we transform their ids for presentation.
+#define STRING_CONSTANT(x) cat("<string constant `", cat(x, "`>"))
+
+// Class-- //
+
+.decl _Valid_Interesting_Type(?type:ReferenceType)
+_Valid_Interesting_Type(?type) :-
+  isReferenceType(?type),
+  !Type_null(?type),
+  !isArrayType(?type),
+  _Server_Interesting_Type(?type).
+
+// ?class has access to ?field (either it is declared in the class, or in a superclass)
+.decl Server_Type_Can_Access_Field(?class:ClassType, ?fld:Field)
+.output Server_Type_Can_Access_Field
+
+.decl _Server_Interesting_Type(?class:ReferenceType)
+
+// All application types
+_Server_Interesting_Type(?class) :-
+  ApplicationClass(?class).
+
+// All classes with a reachable method
+_Server_Interesting_Type(?class) :-
+  Method_DeclaringType(?method, ?class),
+  mainAnalysis.Reachable(?method).
+
+// Types of class heaps used
+_Server_Interesting_Type(?type) :-
+  mainAnalysis.VarPointsTo(_, ?classHeap, _, _),
+  ClassHeap_InstanceType(?classHeap, ?type).
+
+#ifdef REFLECTION
+// Reified types used
+_Server_Interesting_Type(?type) :-
+  mainAnalysis.ReifiedClass(?type, ?value),
+  mainAnalysis.VarPointsTo(_, ?value, _, _).
+#endif // REFLECTION
+
+#ifdef REFLECTION_DYNAMIC_PROXIES
+// Proxied interfaces
+_Server_Interesting_Type(?interface) :-
+  mainAnalysis.ProxyObject_Interface(_, ?interface).
+#endif // REFLECTION_DYNAMIC_PROXIES
+
+// Transitively, everything up the hierarchy
+_Server_Interesting_Type(?interface) :-
+  _Server_Interesting_Type(?class),
+  basic.SupertypeOf(?interface, ?class).
+
+Server_Type_Can_Access_Field(?class, ?fld) :-
+  Field_DeclaringType(?fld, ?class),
+  _Server_Interesting_Type(?class).
+
+Server_Type_Can_Access_Field(?class, ?fld) :-
+  Field_DeclaringType(?fld, ?supertype),
+  Field_Modifier(?mod, ?fld),
+  !Modifier_private(?mod),
+  basic.SupertypeOf(?supertype, ?class),
+  ?supertype != ?class,
+  _Valid_Interesting_Type(?class),
+  _Valid_Interesting_Type(?supertype).
+
+// --Class //
+
+
+// Field-- //
+
+.decl Server_Field_ShadowedBy(?fld:Field, ?shadowFld:Field)
+.decl Server_IField_Values(?baseValue:mainAnalysis.Value, ?fld:Field, ?value:mainAnalysis.Value)
+.decl Server_SField_Values(?fld:Field, ?value:mainAnalysis.Value)
+.decl Server_IField_Values_Count(?baseValue:mainAnalysis.Value, ?fld:Field, ?n:number)
+.output Server_Field_ShadowedBy
+.output Server_IField_Values
+.output Server_SField_Values
+.output Server_IField_Values_Count
+
+Server_Field_ShadowedBy(?fld, ?shadowFld) :-
+  Field_DeclaringType(?fld, ?class),
+  Field_SimpleName(?fld, ?name),
+  basic.SubtypeOfDifferent(?subClass, ?class),
+  _Valid_Interesting_Type(?class),
+  _Valid_Interesting_Type(?subClass),
+  Field_DeclaringType(?shadowFld, ?subClass),
+  Field_SimpleName(?shadowFld, ?name).
+
+.decl _IFPT(?baseValue:mainAnalysis.Value, ?fld:Field, ?value:mainAnalysis.Value)
+.decl _SFPT(?fld:Field, ?value:mainAnalysis.Value)
+.decl _SFPT_Count(?fld:Field, ?n:number)
+
+#ifndef DISABLE_POINTS_TO
+_IFPT(?baseValue, ?fld, ?value) :-
+  mainAnalysis.InstanceFieldPointsTo(_, ?value, ?fld, _, ?baseValue),
+  !isNumConstant(?value).
+#endif // DISABLE_POINTS_TO
+
+Server_IField_Values_Count(?baseValue, ?fld, ?n) :-
+  _IFPT(?baseValue, ?fld, _),
+  ?n = count:{_IFPT(?baseValue, ?fld, _)}.
+
+_SFPT(?fld, ?value) :-
+  mainAnalysis.StaticFieldPointsTo(_, ?value, ?fld),
+  !isNumConstant(?value).
+
+_SFPT_Count(?fld, ?n) :-
+  _SFPT(?fld, _),
+  ?n = count:{_SFPT(?fld, _)}.
+
+Server_IField_Values(?baseValue, ?fld, ?value) :-
+  _IFPT(?baseValue, ?fld, ?value),
+  Server_IField_Values_Count(?baseValue, ?fld, ?count),
+  ?count <= X_SERVER_LOGIC_THRESHOLD,
+  mainAnalysis.isValue(?baseValue),
+  mainAnalysis.isValue(?value),
+  !isStringConstant(?value).
+
+Server_IField_Values(?baseValue, ?fld, STRING_CONSTANT(?value)) :-
+  _IFPT(?baseValue, ?fld, ?value),
+  Server_IField_Values_Count(?baseValue, ?fld, ?count),
+  ?count <= X_SERVER_LOGIC_THRESHOLD,
+  mainAnalysis.isValue(?baseValue),
+  mainAnalysis.isValue(?value),
+  isStringConstant(?value).
+
+Server_IField_Values(?baseValue, ?fld, "<<XL-pt-set>>") :-
+  Server_IField_Values_Count(?baseValue, ?fld, ?count),
+  ?count > X_SERVER_LOGIC_THRESHOLD,
+  mainAnalysis.isValue(?baseValue).
+
+Server_SField_Values(?fld, ?value) :-
+  _SFPT(?fld, ?value),
+  _SFPT_Count(?fld, ?count),
+  ?count <= X_SERVER_LOGIC_THRESHOLD,
+  !isStringConstant(?value),
+  mainAnalysis.isValue(?value).
+
+Server_SField_Values(?fld, STRING_CONSTANT(?value)) :-
+  _SFPT(?fld, ?value),
+  _SFPT_Count(?fld, ?count),
+  ?count <= X_SERVER_LOGIC_THRESHOLD,
+  isStringConstant(?value),
+  mainAnalysis.isValue(?value).
+
+Server_SField_Values(?fld, "<<XL-pt-set>>") :-
+  _SFPT_Count(?fld, ?count),
+  ?count > X_SERVER_LOGIC_THRESHOLD.
+
+// --Field //
+
+
+// Var-- //
+
+.decl Server_Var_Values(?class:ClassType, ?var:Var, ?value:mainAnalysis.Value)
+.decl Server_Var_Return(?var:Var, ?method:Method)
+.output Server_Var_Values
+.output Server_Var_Return
+
+.decl _VPT(?var:Var, ?value:mainAnalysis.Value)
+.decl _VPT_Count(?var:Var, ?n:number)
+.decl _InterestingVar(?var:Var)
+
+_VPT(?var, ?value) :-
+  mainAnalysis.VarPointsTo(_, ?value, _, ?var),
+  !isNumConstant(?value).
+
+_InterestingVar(?var) :-
+  _VPT(?var, _).
+
+_VPT_Count(?var, ?n) :-
+  _InterestingVar(?var),
+  ?n = count:{_VPT(?var, _)}.
+
+.decl _VarUnderThreshold(?var:Var)
+_VarUnderThreshold(?var) :-
+  _VPT_Count(?var, ?count),
+  ?count <= X_SERVER_LOGIC_THRESHOLD.
+
+.decl _VarDeclaringClass(?var:Var, ?class:Type)
+_VarDeclaringClass(?var, ?class) :-
+  _InterestingVar(?var),
+  Var_DeclaringMethod(?var, ?method),
+  Method_DeclaringType(?method, ?class).
+
+Server_Var_Values(?class, ?var, ?value) :-
+  _VPT(?var, ?value),
+  _VarUnderThreshold(?var),
+//  mainAnalysis.isValue(?value),
+  !isStringConstant(?value),
+  _VarDeclaringClass(?var, ?class).
+
+Server_Var_Values(?class, ?var, STRING_CONSTANT(?value)) :-
+  _VPT(?var, ?value),
+  _VarUnderThreshold(?var),
+//  mainAnalysis.isValue(?value),
+  isStringConstant(?value),
+  _VarDeclaringClass(?var, ?class).
+
+Server_Var_Values(?class, ?var, "<<XL-pt-set>>") :-
+  _InterestingVar(?var),
+  !_VarUnderThreshold(?var),
+  _VarDeclaringClass(?var, ?class).
+
+Server_Var_Return(?var, ?method) :-
+  (ReturnVar(?var, ?method) ;
+   NativeReturnVar(?var, ?method)),
+   _VPT(?var, _).
+
+// --Var //
+
+
+// Array-- //
+
+.decl Server_Array_Values(?arrayValue:mainAnalysis.Value, ?value:mainAnalysis.Value)
+.output Server_Array_Values
+
+.decl _AIPT(?arrayValue:mainAnalysis.Value, ?value:mainAnalysis.Value)
+.decl _AIPT_Count(?arrayValue:mainAnalysis.Value, ?n:number)
+
+_AIPT(?arrayValue, ?value) :-
+  mainAnalysis.ArrayIndexPointsTo(_, ?value, _, ?arrayValue).
+
+_AIPT_Count(?arrayValue, ?n) :-
+  _AIPT(?arrayValue, _),
+  ?n = count:{_AIPT(?arrayValue, _)}.
+
+Server_Array_Values(?arrayValue, ?value) :-
+  _AIPT(?arrayValue, ?value),
+  _AIPT_Count(?arrayValue, ?count),
+  ?count <= X_SERVER_LOGIC_THRESHOLD.
+
+Server_Array_Values(?arrayValue, "<<XL-pt-set>>") :-
+  _AIPT_Count(?arrayValue, ?count),
+  ?count > X_SERVER_LOGIC_THRESHOLD.
+
+// --Array //
+
+
+// Method-- //
+
+// ?method is implemented/overriden by ?subMethod
+.decl Server_Method_Subtype(?method:Method, ?subMethod:Method)
+.output Server_Method_Subtype
+
+Server_Method_Subtype(?method, ?subMethod) :-
+  Method_DeclaringType(?method, ?type),
+  Method_SimpleName(?method, ?name),
+  Method_Descriptor(?method, ?desc),
+  ?name != "<clinit>",
+  ?name != "<init>",
+  basic.SubtypeOfDifferent(?subType, ?type),
+  _Valid_Interesting_Type(?type),
+  _Valid_Interesting_Type(?subType),
+  Method_DeclaringType(?subMethod, ?subType),
+  Method_SimpleName(?subMethod, ?name),
+  Method_Descriptor(?subMethod, ?desc).
+
+// Rule to handle covariant return types (so that the user does not
+// land on an invisible bridge method in Java sources).
+Server_Method_Subtype(?method, ?subMethod) :-
+  Server_Method_Subtype(?method, ?bridge),
+  Method_DeclaringType(?bridge, ?type),
+  Method_SimpleName(?bridge, ?name),
+  Method_Descriptor(?bridge, ?desc),
+  basic.MethodImplementedModuloCovariance(?name, ?desc, ?type, ?subMethod).
+
+
+// All the methods reachable from a method (transitive call-graph)
+//.decl Server_Method_ReachesMethod(?fromMethod:Method, ?toMethod:Method)
+//.decl Server_Method_AllocationCount(?method:Method, ?n:number)
+//.output Server_Method_AllocationCount
+//.output Server_Method_ReachesMethod
+//
+//.decl _MethodCallsMethod(?fromMethod:Method, ?toMethod:Method)
+//.decl _MethodReachesAllocation(?method:Method, ?insn:Instruction)
+//
+//Server_Method_ReachesMethod(?fromMethod, ?toMethod) :-
+//  _MethodCallsMethod(?fromMethod, ?toMethod).
+//
+//Server_Method_ReachesMethod(?fromMethod, ?toMethod) :-
+//  Server_Method_ReachesMethod(?fromMethod, ?midMethod),
+//  _MethodCallsMethod(?toMethod, ?midMethod).
+//
+//_MethodReachesAllocation(?method, ?insn) :-
+//  _MethodCallsMethod(?method, ?toMethod),
+//  _MethodReachesAllocation(?toMethod, ?insn).
+//
+//Server_Method_AllocationCount(?method, ?n) :-
+//  _MethodReachesAllocation(?method, _),
+//  ?n = count:{_MethodReachesAllocation(?method, _)}.
+//
+//Server_Method_AllocationCount(?method, 0) :-
+//  Method(?method),
+//  !_MethodReachesAllocation(?method, _).
+
+// --Method //
+
+
+// Invocation-- //
+
+.decl Server_Invocation_Values(?fromMethod:Method, ?invo:MethodInvocation, ?toMethod:Method)
+.decl Server_ClassCallsClass(?fromClass:ClassType, ?toClass:ClassType)
+.output Server_Invocation_Values
+.output Server_ClassCallsClass
+
+Server_Invocation_Values(?fromMethod, ?invo, ?toMethod) :-
+  mainAnalysis.AnyCallGraphEdge(?invo, ?toMethod),
+  Instruction_Method(?invo, ?fromMethod).
+
+// Augment invocation values with targets of invoked covariant
+// bridges (which are invisible in the case of Java sources).
+Server_Invocation_Values(?fromMethod, ?invo, ?toMethod) :-
+  Server_Invocation_Values(?fromMethod, ?invo, ?bridge),
+  Method_DeclaringType(?bridge, ?type),
+  Method_SimpleName(?bridge, ?name),
+  Method_Descriptor(?bridge, ?desc),
+  basic.MethodImplementedModuloCovariance(?name, ?desc, ?type, ?toMethod).
+
+Server_ClassCallsClass(?fromClass, ?toClass) :-
+  Server_Invocation_Values(?fromMethod, _, ?toMethod),
+  Method_DeclaringType(?fromMethod, ?fromClass),
+  Method_DeclaringType(?toMethod, ?toClass).
+
+// --Invocation //
+
+
+// Metrics-- //
+
+.decl Server_Metrics(?metric:symbol, ?n:number)
+.output Server_Metrics
+
+.decl _AppVirtual(?invo:MethodInvocation)
+.decl _AppVirtual_Resolved(?invo:MethodInvocation)
+.output mainAnalysis.AppReachable
+
+_AppVirtual(?invo) :-
+  _VirtualMethodInvocation(?invo, _, _, _, ?method),
+  ApplicationMethod(?method).
+
+_AppVirtual_Resolved(?invo) :-
+  _AppVirtual(?invo),
+  mainAnalysis.AnyCallGraphEdge(?invo, _).
+
+Server_Metrics("#AppVirtual (static)", ?n) :- ?n = count:{_AppVirtual(_)}.
+Server_Metrics("#AppVirtual (resolved)", ?n) :- ?n = count:{_AppVirtual_Resolved(_)}.
+Server_Metrics("#AppMethod (reachable)", ?n) :- ?n = count:{mainAnalysis.AppReachable(_)}.
+
+.decl _ClassTypeUnion(?c:ReferenceType)
+_ClassTypeUnion(?c) :- isClassType(?c) ; isInterfaceType(?c).
+
+Server_Metrics("#AppClass", ?n) :- ?n = count:{ApplicationClass(_)}.
+Server_Metrics("#Class", ?n) :- ?n = count:{_ClassTypeUnion(_)}.
+Server_Metrics("#AppMethod", ?n) :- ?n = count:{ApplicationMethod(_)}.
+Server_Metrics("#Method", ?n) :- ?n = count:{isMethod(_)}.
+Server_Metrics("#Field", ?n) :- ?n = count:{isField(_)}.
+Server_Metrics("#Var", ?n) :- ?n = count:{isVar(_)}.
+Server_Metrics("#HeapAllocation", ?n) :- ?n = count:{isHeapAllocation(_)}.
+Server_Metrics("#MethodInvocation", ?n) :- ?n = count:{isMethodInvocation(_)}.
+Server_Metrics("Results threshold", X_SERVER_LOGIC_THRESHOLD).
+
+// --Metrics //
+
+// Information flow //
+
+#ifdef INFORMATION_FLOW
+.output TaintSourceMethod(IO="file",filename="TaintSourceMethod.csv",delimiter="\t")
+.output LeakingSinkMethodArg(IO="file",filename="LeakingSinkMethodArg.csv",delimiter="\t")
+#endif // INFORMATION_FLOW

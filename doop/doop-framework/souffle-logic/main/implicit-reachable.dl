@@ -1,0 +1,60 @@
+#ifndef EXCLUDE_IMPLICITLY_REACHABLE_CODE
+
+/**
+ * Implicitly reachable methods are invoked by the JVM on startup.
+ */
+
+#define IMPLICIT_REACHABLE(m) ImplicitReachable(m) :- isMethod(m)
+
+IMPLICIT_REACHABLE("<java.lang.System: void initializeSystemClass()>").
+IMPLICIT_REACHABLE("<java.lang.Thread: void <init>(java.lang.ThreadGroup,java.lang.Runnable)>").
+IMPLICIT_REACHABLE("<java.lang.Thread: void <init>(java.lang.ThreadGroup,java.lang.String)>").
+IMPLICIT_REACHABLE("<java.lang.ThreadGroup: void <init>()>").
+IMPLICIT_REACHABLE("<java.lang.Thread: void exit()>").
+IMPLICIT_REACHABLE("<java.lang.ThreadGroup: void uncaughtException(java.lang.Thread,java.lang.Throwable)>").
+IMPLICIT_REACHABLE("<java.lang.ClassLoader: void <init>()>").
+IMPLICIT_REACHABLE("<java.lang.ClassLoader: java.lang.Class loadClassInternal(java.lang.String)>").
+IMPLICIT_REACHABLE("<java.lang.ClassLoader: void checkPackageAccess(java.lang.Class,java.security.ProtectionDomain)>").
+IMPLICIT_REACHABLE("<java.lang.ClassLoader: void addClass(java.lang.Class)>").
+IMPLICIT_REACHABLE("<java.lang.ClassLoader: long findNative(java.lang.ClassLoader,java.lang.String)>").
+IMPLICIT_REACHABLE("<java.security.PrivilegedActionException: void <init>(java.lang.Exception)>").
+
+/**
+ * TODO: this method does not seems to be implicitly reachable. There is a
+ * method Finalizer.runFinalization, but this method is invoked via a native call
+ * from Runtime.runFinalization. runFinalizer is invoked from the FinalizerThread,
+ * which the analysis should be able to figure out by itself.
+
+IMPLICIT_REACHABLE("<java.lang.ref.Finalizer: void runFinalizer()>").
+*/
+
+#ifndef MICRO
+
+// Make test entry points implicitly reachable by discovering their
+// annotations. This can also discover the entry points of
+// XCorpus.
+#ifdef DISCOVER_TESTS
+#include "../addons/testing/test-discovery.dl"
+
+ForcedReachable(?m) :- TestNGAnnotatedMethod(?m).
+ForcedReachable(?m) :- JUnitAnnotatedMethod(?m).
+ForcedReachable(?m) :- JUnitGenerator(?m).
+ForcedReachable(?m) :- JUnitTestMethod(?m, _).
+ForcedReachable(?m) :- EvoSuiteEntryPoint(?m).
+#endif // DISCOVER_TESTS
+
+ApplicationEntryPoint(?meth) :-
+  ForcedReachable(?meth),
+  ApplicationMethod(?meth).
+
+#ifndef ANDROID
+ForcedReachable(?meth) :-
+  KeepMethod(?meth).
+ForcedReachable(?meth) :-
+  RootCodeElement(?meth),
+  isMethod(?meth).
+#endif // ANDROID
+
+#endif // MICRO
+
+#endif // EXCLUDE_IMPLICITLY_REACHABLE_CODE

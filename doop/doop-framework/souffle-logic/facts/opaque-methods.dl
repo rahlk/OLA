@@ -1,0 +1,85 @@
+// Opaque methods are really opaque method signatures that are not
+// subject to normal handling of method invocation. Such invocations
+// are not resolved by method lookup/resolution and arguments/return
+// values are not handled. There is only ad-hoc handling of these
+// signatures in various places in analysis logic. This helps with
+// difficult methods that only contribute noise to the analysis and
+// thus the analysis should never enter them.
+//
+// A rule handling an opaque method invocation should:
+// (a) Use the imported facts directly (e.g., _VirtualMethodInvocation).
+// (b) Create call-graph edges manually via OpaqueCallGraphEdge.
+
+.type OpaqueInstruction = Instruction
+
+.decl isOpaqueInstruction(?insn:OpaqueInstruction)
+
+.decl ClassLoaderMethod(?method:Method, ?argIdx:number)
+.output ClassLoaderMethod
+
+// Opaque method invocations
+
+isOpaqueInstruction(?instruction) :-
+   _StaticMethodInvocation(?instruction, _, ?signature, _),
+   isOpaqueMethod(?signature).
+isOpaqueInstruction(?instruction) :-
+   _SpecialMethodInvocation(?instruction, _, ?signature, _, _),
+   isOpaqueMethod(?signature).
+isOpaqueInstruction(?instruction) :-
+   _VirtualMethodInvocation(?instruction, _, ?signature, _, _),
+   isOpaqueMethod(?signature).
+
+#define CLASS_LOADER_METHOD(method, idx) ClassLoaderMethod(?m, idx) :- isMethod(?m), ?m = method
+
+// dalvik.system.DexFile
+CLASS_LOADER_METHOD("<dalvik.system.DexFile: java.lang.Class defineClassNative(java.lang.String,java.lang.ClassLoader,java.lang.Object,dalvik.system.DexFile)>", 0).
+// java.lang.ClassLoader
+CLASS_LOADER_METHOD("<java.lang.ClassLoader: java.lang.Class defineClass(java.lang.String,byte[],int,int)>", 0).
+CLASS_LOADER_METHOD("<java.lang.ClassLoader: java.lang.Class defineClass(java.lang.String,byte[],int,int,java.security.ProtectionDomain)>", 0).
+CLASS_LOADER_METHOD("<java.lang.ClassLoader: java.lang.Class defineClass(java.lang.String,java.nio.ByteBuffer,java.security.ProtectionDomain)>", 0).
+CLASS_LOADER_METHOD("<java.lang.ClassLoader: java.lang.Class findLoadedClass(java.lang.String)>", 0).
+CLASS_LOADER_METHOD("<java.lang.ClassLoader: java.lang.Class findSystemClass(java.lang.String)>", 0).
+CLASS_LOADER_METHOD("<java.lang.ClassLoader: java.lang.Class findBootstrapClassOrNull(java.lang.String)>", 0).
+CLASS_LOADER_METHOD("<java.lang.ClassLoader: java.lang.Class loadClass(java.lang.String)>", 0).
+CLASS_LOADER_METHOD("<java.lang.ClassLoader: java.lang.Class loadClass(java.lang.String,boolean)>", 0).
+// java.security.SecureClassLoader
+CLASS_LOADER_METHOD("<java.security.SecureClassLoader: java.lang.Class defineClass(java.lang.String,byte[],int,int,java.security.CodeSource)>", 0).
+CLASS_LOADER_METHOD("<java.security.SecureClassLoader: java.lang.Class defineClass(java.lang.String,java.nio.ByteBuffer,java.security.CodeSource)>", 0).
+// java.lang.VMClassLoader
+CLASS_LOADER_METHOD("<java.lang.VMClassLoader: java.lang.Class findLoadedClass(java.lang.ClassLoader,java.lang.String)>", 1).
+
+.decl MTEntryPoint(?id:number, ?invo:MethodInvocation, ?sig:Method)
+
+#define MTEP(id, sig) \
+MTEntryPoint(id, ?invo, ?signature) :- \
+   _StaticMethodInvocation(?invo, _, ?signature, _), \
+   ?signature = sig
+
+// methodType(Class<?> rtype)
+MTEP(1, "<java.lang.invoke.MethodType: java.lang.invoke.MethodType methodType(java.lang.Class)>").
+// methodType(Class<?> rtype, Class<?> ptype0)
+MTEP(2, "<java.lang.invoke.MethodType: java.lang.invoke.MethodType methodType(java.lang.Class,java.lang.Class)>").
+// methodType(Class<?> rtype, Class<?> ptype0, Class<?>... ptypes)
+MTEP(3, "<java.lang.invoke.MethodType: java.lang.invoke.MethodType methodType(java.lang.Class,java.lang.Class,java.lang.Class[])>").
+// methodType(Class<?> rtype, Class<?>[] ptypes)
+MTEP(4, "<java.lang.invoke.MethodType: java.lang.invoke.MethodType methodType(java.lang.Class,java.lang.Class[])>").
+// methodType(Class<?> rtype, MethodType ptypes)
+MTEP(5, "<java.lang.invoke.MethodType: java.lang.invoke.MethodType methodType(java.lang.Class,java.lang.invoke.MethodType)>").
+// methodType(Class<?> rtype, List<Class<?>> ptypes)
+MTEP(6, "<java.lang.invoke.MethodType: java.lang.invoke.MethodType methodType(java.lang.Class,java.util.List)>").
+
+isOpaqueMethod(?method) :- ClassLoaderMethod(?method, _).
+isOpaqueMethod(?method) :- MTEntryPoint(_, _, ?method).
+
+#define OPAQUE_METHOD(meth) isOpaqueMethod(m) :- isMethod(m), m = meth
+
+OPAQUE_METHOD("<java.lang.Class: java.lang.String getSimpleName()>").
+OPAQUE_METHOD("<java.lang.Class: java.lang.Object[] getEnumConstants()>").
+OPAQUE_METHOD("<java.lang.invoke.MethodHandle: java.lang.invoke.MethodHandle asType(java.lang.invoke.MethodType)>").
+#ifdef REFLECTION_METHOD_HANDLES
+OPAQUE_METHOD("<java.lang.invoke.MethodHandles: java.lang.invoke.MethodHandles$Lookup lookup()>").
+OPAQUE_METHOD("<java.lang.invoke.MethodHandles: java.lang.invoke.MethodHandles$Lookup publicLookup()>").
+OPAQUE_METHOD("<java.lang.invoke.MethodHandles$Lookup: java.lang.Class lookupClass()>").
+#endif // REFLECTION_METHOD_HANDLES
+OPAQUE_METHOD("<java.lang.invoke.MethodType: java.lang.Class parameterType(int)>").
+OPAQUE_METHOD("<java.lang.invoke.MethodType: java.lang.Class returnType()>").

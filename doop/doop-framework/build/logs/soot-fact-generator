@@ -1,0 +1,4 @@
+2021-03-25 15:47:46,821 [main] INFO  org.clyze.doop.soot.Main - Logging initialized, using directory: /home/bbalraj/IBM/doop-mirror/build/logs
+2021-03-25 15:48:31,371 [pool-1-thread-1] WARN  org.clyze.doop.soot.Main - WARNING: some classes were not resolved, consider using thorough fact generation or adding them manually via --also-resolve: [java.lang.annotation.Inherited, sun.util.locale.provider.HostLocaleProviderAdapterImpl]
+2021-03-25 16:03:12,698 [main] INFO  org.clyze.doop.soot.Main - Logging initialized, using directory: /home/bbalraj/IBM/doop-mirror/build/logs
+2021-03-25 16:03:55,438 [pool-1-thread-1] WARN  org.clyze.doop.soot.Main - WARNING: some classes were not resolved, consider using thorough fact generation or adding them manually via --also-resolve: [java.lang.annotation.Inherited, sun.util.locale.provider.HostLocaleProviderAdapterImpl]
