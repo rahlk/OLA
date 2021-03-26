@@ -26,8 +26,13 @@ Path "doop-folder/out/analysis-name/id-for-analysis" contains results of all ana
 
         python build-graph.py last-analysis/ApplicationMethod.csv last-analysis/CallGraphEdge.csv 0
 
-* IRS call graph without context labels over edge ![alt text](https://github.com/rahlk/OLA/blob/main/doop/analysis/irs_call_graph_without_context.png)
-* IRS call graph with context labels over edge ![alt text](https://github.com/rahlk/OLA/blob/main/doop/analysis/irs_call_graph_with_context.png)
+* IRS call graph without context labels over edge 
+    
+   ![alt text](https://github.com/rahlk/OLA/blob/main/doop/analysis/irs_call_graph_without_context.png)
+
+* IRS call graph with context labels over edge 
+    
+   ![alt text](https://github.com/rahlk/OLA/blob/main/doop/analysis/irs_call_graph_with_context.png)
 
 ### Var_Points_To
 * Each analysis stores variable pointers information in VarPoints.csv
