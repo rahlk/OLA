@@ -6,10 +6,6 @@ import boomerang.scene.*;
 import boomerang.scene.ControlFlowGraph.Edge;
 import boomerang.scene.jimple.BoomerangPretransformer;
 import boomerang.scene.jimple.SootCallGraph;
-import com.google.common.collect.Sets;
-
-import java.io.File;
-import java.io.IOException;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,7 +13,6 @@ import soot.*;
 import soot.options.Options;
 import sync.pds.solver.OneWeightFunctions;
 import sync.pds.solver.WeightFunctions;
-import sync.pds.solver.nodes.Node;
 import wpds.impl.Weight;
 import wpds.impl.Weight.NoWeight;
 
@@ -38,7 +33,8 @@ public class BoomerangPointsTo {
     }
 
     private static void setupSoot(String sootClassPath, String mainClass) {
-        G.v().reset();
+        G.v();
+        G.reset();
         Options.v().set_prepend_classpath(true);
         Options.v().set_whole_program(true);
         Options.v().set_keep_line_number(true);
@@ -68,13 +64,13 @@ public class BoomerangPointsTo {
         List<SootMethod> ePoints = new LinkedList<>();
         for (SootClass sc : Scene.v().getApplicationClasses()) {
             for (SootMethod sm : sc.getMethods()) {
-                System.out.printf("Soot Method:%s\n", sm.toString());
+                LOGGER.info("Soot Method:{}", sm);
                 ePoints.add(sm);
             }
         }
 
         for (SootMethod ep : ePoints) {
-            System.out.printf("Entrypoint:%s\n", ep.toString());
+            LOGGER.info("Entrypoint:{}\n", ep);
         }
 
         Scene.v().setEntryPoints(ePoints);
@@ -155,8 +151,7 @@ public class BoomerangPointsTo {
                 BoomerangPretransformer.v().apply();
                 callGraph = new SootCallGraph();
                 dataFlowScope = SootDataFlowScope.make(Scene.v());
-//                runWholeProgram();
-                 runWholeProgramMode();
+                runWholeProgramMode();
             }
         };
     }
@@ -167,7 +162,7 @@ public class BoomerangPointsTo {
             protected Collection<? extends Query> generate(Edge cfgEdge) {
                 Statement statement = cfgEdge.getTarget();
                 if (statement.isAssign()) {
-                    System.out.println(statement + " " + statement.getLeftOp() + " " + statement.getRightOp());
+                    LOGGER.info("{} {} {}", statement, statement.getLeftOp(), statement.getRightOp());
                     return Collections.singleton(BackwardQuery.make(cfgEdge, statement.getLeftOp()));
                 }
                 return Collections.emptySet();
@@ -188,86 +183,82 @@ public class BoomerangPointsTo {
                 BackwardBoomerangResults<Weight.NoWeight> backwardQueryResults = solver.solve((BackwardQuery) query);
                 if (backwardQueryResults.isEmpty())
                     continue;
-                System.out.println("Solving query: " + query);
-                System.out.println("All allocation sites of the query variable are:");
-                System.out.println(backwardQueryResults.getAllocationSites());
+                LOGGER.info("Solving query: {}", query);
+                LOGGER.info("All allocation sites of the query variable are:");
+                LOGGER.info("{}", backwardQueryResults.getAllocationSites());
 
-                System.out.println("All aliasing access path of the query variable are:");
-                System.out.println(backwardQueryResults.getAllAliases());
-                System.out.println("============");
+                LOGGER.info("All aliasing access path of the query variable are:");
+                LOGGER.info("{}", backwardQueryResults.getAllAliases());
+                LOGGER.info("============");
             }
         }
         solver.unregisterAllListeners();
     }
 
-  private static void runWholeProgram() {
-    final Set<Node<Edge, Val>> results = Sets.newHashSet();
-    WholeProgramBoomerang<NoWeight> solver =
-        new WholeProgramBoomerang<NoWeight>(
-            callGraph,
-            dataFlowScope,
-            new DefaultBoomerangOptions() {
-              @Override
-              public int analysisTimeoutMS() {
-                return analysisTimeout;
-              }
+    private static void runWholeProgram() {
+        WholeProgramBoomerang<NoWeight> solver = new WholeProgramBoomerang<NoWeight>(callGraph, dataFlowScope,
+                new DefaultBoomerangOptions() {
+                    @Override
+                    public int analysisTimeoutMS() {
+                        return analysisTimeout;
+                    }
 
-              @Override
-              public boolean onTheFlyCallGraph() {
-                return true;
-              }
+                    @Override
+                    public boolean onTheFlyCallGraph() {
+                        return true;
+                    }
 
-              @Override
-              public boolean allowMultipleQueries() {
-                return true;
-              }
-            }) {
+                    @Override
+                    public boolean allowMultipleQueries() {
+                        return true;
+                    }
+                }) {
 
-    @Override
-    protected WeightFunctions<Edge, Val, Field, NoWeight> getForwardFieldWeights() {
-        return new OneWeightFunctions<>(NoWeight.NO_WEIGHT_ONE);
-    }
-
-    @Override
-    protected WeightFunctions<Edge, Val, Field, NoWeight> getBackwardFieldWeights() {
-        return new OneWeightFunctions<>(NoWeight.NO_WEIGHT_ONE);
-    }
-
-    @Override
-    protected WeightFunctions<Edge, Val, Edge, NoWeight> getBackwardCallWeights() {
-        return new OneWeightFunctions<>(NoWeight.NO_WEIGHT_ONE);
-    }
-
-    @Override
-    protected WeightFunctions<Edge, Val, Edge, NoWeight> getForwardCallWeights(ForwardQuery sourceQuery) {
-        return new OneWeightFunctions<>(NoWeight.NO_WEIGHT_ONE);
-    }
-
-    @Override
-    public void wholeProgramAnalysis() {
-        AnalysisScope scope = new AnalysisScope(callGraph) {
             @Override
-            protected Collection<? extends Query> generate(Edge cfgEdge) {
-                Statement statement = cfgEdge.getTarget();
-                if (statement.containsInvokeExpr()) {
-                    Val arg = statement.getInvokeExpr().getArg(0);
-                    return Collections.singleton(BackwardQuery.make(cfgEdge, arg));
+            protected WeightFunctions<Edge, Val, Field, NoWeight> getForwardFieldWeights() {
+                return new OneWeightFunctions<>(Weight.NO_WEIGHT_ONE);
+            }
+
+            @Override
+            protected WeightFunctions<Edge, Val, Field, NoWeight> getBackwardFieldWeights() {
+                return new OneWeightFunctions<>(Weight.NO_WEIGHT_ONE);
+            }
+
+            @Override
+            protected WeightFunctions<Edge, Val, Edge, NoWeight> getBackwardCallWeights() {
+                return new OneWeightFunctions<>(Weight.NO_WEIGHT_ONE);
+            }
+
+            @Override
+            protected WeightFunctions<Edge, Val, Edge, NoWeight> getForwardCallWeights(ForwardQuery sourceQuery) {
+                return new OneWeightFunctions<>(Weight.NO_WEIGHT_ONE);
+            }
+
+            @Override
+            public void wholeProgramAnalysis() {
+                AnalysisScope scope = new AnalysisScope(callGraph) {
+                    @Override
+                    protected Collection<? extends Query> generate(Edge cfgEdge) {
+                        Statement statement = cfgEdge.getTarget();
+                        if (statement.containsInvokeExpr()) {
+                            Val arg = statement.getInvokeExpr().getArg(0);
+                            return Collections.singleton(BackwardQuery.make(cfgEdge, arg));
+                        }
+                        return Collections.emptySet();
+                    }
+                };
+                for (Query s : scope.computeSeeds()) {
+                    if (s.getType() != null) {
+                        BackwardBoomerangResults<Weight.NoWeight> backwardQueryResults = solve((BackwardQuery) s);
+                        LOGGER.info("All allocation sites of the query variable are:{}",
+                                backwardQueryResults.getAllocationSites());
+                    }
                 }
-                return Collections.emptySet();
+                LOGGER.info("Total solvers: {}", this.getSolvers().size());
             }
         };
-        for (Query s : scope.computeSeeds()) {
-            if (s.getType() != null) {
-                System.out.println(s);
-                BackwardBoomerangResults<Weight.NoWeight> backwardQueryResults = solve((BackwardQuery) s);
-                System.out.println("All allocation sites of the query variable are:");
-                System.out.println(backwardQueryResults.getAllocationSites());
-            }
-        }
 
-        System.out.println("Total solvers:" + this.getSolvers().size());
-        System.out.println(options.statsFactory());
+        solver.wholeProgramAnalysis();
+        solver.unregisterAllListeners();
     }
-};
-
-solver.wholeProgramAnalysis();solver.unregisterAllListeners();}}
+}
