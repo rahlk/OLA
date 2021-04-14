@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'application'
     id 'maven-publish'
+    id 'org.ajoberstar.grgit' version '4.1.0'
 }
 
 repositories {
@@ -54,4 +55,29 @@ tasks.withType(JavaCompile) {
 
 application {
     mainClassName = project.findProperty("mainClass").toString()
+}
+
+task tagRelease {
+  description = 'Tags the current head with the project\'s version.'
+  doLast {
+    grgit.tag.add {
+      name = version
+      message = "Release of ${version}"
+    }
+  }
+}
+
+task pushToOrigin {
+  description = 'Pushes current branch\'s committed changes to origin repo.'
+  doLast {
+    // The next two lines are equivalent to git add --all . 
+    grgit.add(patterns: ["."], update: true)
+    grgit.add(patterns: ["."])
+    // Git commit w/wo a commit message
+    if (project.hasProperty("message") )
+        grgit.commit(message: message, all: true)
+    else
+        grgit.commit(message: "Autocommit from gradle", all: true)
+    grgit.push()
+  }
 }
