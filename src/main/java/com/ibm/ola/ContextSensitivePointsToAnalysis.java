@@ -7,13 +7,13 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.*;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
+
 import soot.*;
 import soot.jimple.JimpleBody;
 import soot.jimple.Stmt;
 import soot.jimple.toolkits.callgraph.Edge;
 import soot.tagkit.LineNumberTag;
-import soot.tagkit.Tag;
 import vasco.CallSite;
 import vasco.Context;
 import vasco.ContextTransitionTable;

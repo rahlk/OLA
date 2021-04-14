@@ -69,7 +69,7 @@ public class VanillaPointsToAnalysis {
 
                 // Build the points to graph
                 Graph<Object> pointsToGraph = buildPointsTo(scopeFile);
-                Graph<Object> prunedGraph = pruneForAppLoader(pointsToGraph);
+                // Graph<Object> prunedGraph = pruneForAppLoader(pointsToGraph);
 
                 // DotUtil.dotify(pointsToGraph, null, dotFile, pdfFile,
                 // p.getProperty(WalaExamplesProperties.DOT_EXE));
