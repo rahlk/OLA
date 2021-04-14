@@ -35,7 +35,7 @@ target/
 .settings
 **/.checkstyle
 target/
-bin/
+bin/**/*
 **/lib/
 out/
 server/
