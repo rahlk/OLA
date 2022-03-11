@@ -1,2 +1,0 @@
-2021-03-26 00:25:20,920 [main] INFO  org.clyze.doop.soot.Main - Logging initialized, using directory: /home/bbalraj/IBM/git_repos/OLA/doop/doop-framework/build/logs
-2021-03-26 00:26:04,598 [pool-1-thread-1] WARN  org.clyze.doop.soot.Main - WARNING: some classes were not resolved, consider using thorough fact generation or adding them manually via --also-resolve: [java.lang.annotation.Inherited, sun.util.locale.provider.HostLocaleProviderAdapterImpl]

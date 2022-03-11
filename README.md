@@ -1,2 +1,0 @@
-# OLA: Object Lifecycle Analyzer
-
