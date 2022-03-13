@@ -1,0 +1,41 @@
+group 'com.ibm'
+version '1.0-SNAPSHOT'
+
+apply plugin: 'java'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+
+task fatjar(type: Jar) {
+    baseName = 'ola_agent'
+    manifest {
+        attributes 'Implementation-Title': 'Gradle Jar File Example',
+                'Implementation-Version': version,
+                'Manifest-Version': '1.0',
+                'Agent-Class': 'com.ibm.ola.Agent.Transformer',
+                'Premain-Class': 'com.ibm.ola.Agent.Transformer',
+                'Boot-Class-Path': 'ola_agent-'+ version + '.jar' + ":   ",
+                'Can-Set-Native-Method-Prefix': 'true',
+                'Can-Retransform-Classes': 'true'
+
+    }
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+}
+
+allprojects {
+    gradle.projectsEvaluated {
+        tasks.withType(JavaCompile) {
+            options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
+        }
+    }
+}
+
+dependencies {
+    testCompile group: 'junit', name: 'junit', version: '4.11'
+    compile group: 'org.ow2.asm', name: 'asm-debug-all', version: '5.1'
+}
