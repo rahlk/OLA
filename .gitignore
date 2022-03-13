@@ -5,7 +5,6 @@
 build
 .vscode
 
-
 # Created by https://www.toptal.com/developers/gitignore/api/java,gradle,maven
 # Edit at https://www.toptal.com/developers/gitignore?templates=java,gradle,maven
 
@@ -76,4 +75,3 @@ gradle-app.setting
 # JDT-specific (Eclipse Java Development Tools)
 
 # End of https://www.toptal.com/developers/gitignore/api/java,gradle,maven
-
