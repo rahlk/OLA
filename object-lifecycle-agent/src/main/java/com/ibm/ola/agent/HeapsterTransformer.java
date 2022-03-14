@@ -48,11 +48,7 @@ public class HeapsterTransformer extends ClassVisitor {
 			super(Opcodes.ASM5, access, desc, mv);
 			this.methodName = methodName;
 		}
-		
-        public void visitMethodInsn(int opcode, String owner, String name, String desc) {
-            visitMethodInsn(opcode, owner, name, desc, false);
-        }
-		
+				
 		public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean isInterface) {
 			if (opcode == Opcodes.INVOKESPECIAL && name.equals("<init>") && 
 					!isIgnorableConstructorCall(className, methodName, owner, superName)) {// we don't care about constructors calling constructors

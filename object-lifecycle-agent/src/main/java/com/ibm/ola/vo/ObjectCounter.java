@@ -22,7 +22,7 @@ public class ObjectCounter implements Serializable {
 	public void updateCount(Long id, boolean add) {
 		Long count = map.get(id);
 		if (count == null)  count = 0l;
-		count = new Long(new Long(count + (add ? 1 : -1))); 
+		count = Long.valueOf(count + (add ? 1 : -1)); 
 		map.put(id, count);
 	}
 	

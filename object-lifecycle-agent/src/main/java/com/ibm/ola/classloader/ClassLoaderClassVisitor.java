@@ -39,10 +39,6 @@ public class ClassLoaderClassVisitor extends ClassVisitor {
 			this.methodName = methodName;
 		}
 		
-	    public void visitMethodInsn(int opcode, String owner, String name, String desc) {
-	          visitMethodInsn(opcode, owner, name, desc, false);
-	    }
-		
 		public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean isInterface) {
 			mv.visitMethodInsn(opcode,  owner,  name,  desc, isInterface);
 			

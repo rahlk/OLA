@@ -26,7 +26,8 @@ public class Recorder {
 	
 	static Map<PhantomReference<Object>, Long> map = Collections.synchronizedMap( new IdentityHashMap<PhantomReference<Object>, Long>() );
 
-	static ReferenceQueue queue = new ReferenceQueue();
+	@SuppressWarnings({ "unchecked" })
+	static ReferenceQueue<? super Object> queue = (ReferenceQueue<? super Object>) new ReferenceQueue();
 	
 	static boolean alive = true;
 
@@ -35,7 +36,7 @@ public class Recorder {
 			try {
 				if (!dataStore.isErrorState()) {
 					long classId = dataStore.newObjectEvent(o, System.currentTimeMillis());
-					PhantomReference<Object> ref = new PhantomReference<Object>(o, queue);
+					PhantomReference<Object> ref = new PhantomReference<Object>(o, (ReferenceQueue<? super Object>) queue);
 					map.put(ref, classId);
 				}
 			} 
@@ -58,7 +59,7 @@ public class Recorder {
 		public void run() {
 			while (alive) {
 				try {
-					PhantomReference ref = (PhantomReference) queue.remove();
+					PhantomReference<?> ref = (PhantomReference<?>) queue.remove();
 					Long classId = map.remove(ref);
 					
 					if (dataStore != null && !dataStore.isErrorState())

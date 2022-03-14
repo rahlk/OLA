@@ -69,9 +69,9 @@ public class HeapsterAgent implements ClassFileTransformer{
 				try {
 					inst.addTransformer(new HeapsterAgent());
 					
-					Class dataStoreClass = Class.forName(dataStoreImplementationClass);
-					Constructor<AbstractDataStore> c = dataStoreClass.getConstructor(new Class[]{Configuration.class});
-					AbstractDataStore dataStore = c.newInstance(new Object[]{configuration});
+					Class<?> dataStoreClass = Class.forName(dataStoreImplementationClass);
+					Constructor<?> c = dataStoreClass.getConstructor(new Class[]{Configuration.class});
+					AbstractDataStore dataStore = (AbstractDataStore) c.newInstance(new Object[]{configuration});
 					Recorder.start(configuration, dataStore);
 					Logger.setLevel(configuration);
 					
