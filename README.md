@@ -13,9 +13,11 @@ Root project 'OLA'
     +--- Project ':call-tracing-agent'       --> This agent instruments classfile to extract caller-callee relationships 
                                                  (optionally saves the bytecode of the arguments, and also appends 
                                                  context sensitivity based on https://arxiv.org/abs/1905.02088)
+    
     +--- Project ':object-lifecycle-agent'   --> This agent instruments tracks the objects saved on the heap and 
                                                  generates lifecycle information (i.e., time between allocation and 
                                                  garbage collections) in a json file. Inspired by https://9m.no/ﷄ뺏
+    
     +--- Project ':test'                     --> This are just a set of test programs to test the working of above 
                                                  agents. Inspired by and extended from https://9m.no/䎁᎑
 ```
