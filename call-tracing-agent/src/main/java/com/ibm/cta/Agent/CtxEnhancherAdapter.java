@@ -210,9 +210,10 @@ public class CtxEnhancherAdapter extends ClassVisitor {
                 // Generate the original invocation instruction.
                 super.visitMethodInsn(opcode, owner, name, desc, itf);
                 
+                // FIXME: Is there a better way to handle return instruction?
                 // Record the return using com.ibm.cta.Recorder.Recorder::recordCall(),
                 // but now with callee and caller as their arguments.
-                recordCall(callee, caller);
+                // recordCall(callee, caller);
 
             }
                 
