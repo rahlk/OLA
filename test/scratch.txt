@@ -1,0 +1,27 @@
+class A:
+    void foo():
+        ...
+        B b = new B() 
+        // A.foo(), B.bar()
+
+        b.baz(1,2,3)
+        //
+        local_var_stack = [1,2,3,1,2,3]
+        interceptPayload(local_var_stack_2)
+        local_var_stack = [1,2,3]
+        baz(arg1,arg2,arg3)
+        //
+        
+        //
+        
+        //
+        local_var_stack = ["a.foo()", "b.bar()"]
+        POP local_var_stack -> arg 1
+        POP local_var_stack -> arg 2
+        
+        recordCall(arg 1, arg 2);
+        
+        //
+
+        b.bar() <-- visit bar()
+    

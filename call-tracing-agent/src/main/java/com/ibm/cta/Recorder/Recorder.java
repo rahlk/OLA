@@ -11,7 +11,7 @@ import java.util.Date;
  * @author Rahul Krishna <i.m.ralk@gmail.com>
  */
 public final class Recorder {
-    public static void recordCall(String callee, String caller) {
+    public static void recordCall(String caller, String callee) {
         // Save the edge information in a csv
         // System time in millis(), caller, callee
         Date timeNow = new Date(System.currentTimeMillis());

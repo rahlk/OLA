@@ -28,7 +28,7 @@ public class Recorder {
 
 	@SuppressWarnings({ "unchecked" })
 	static ReferenceQueue<? super Object> queue = (ReferenceQueue<? super Object>) new ReferenceQueue();
-	
+	 
 	static boolean alive = true;
 
 	public static void record(Object o) {

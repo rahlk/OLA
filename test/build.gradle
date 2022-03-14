@@ -6,7 +6,7 @@ apply plugin: 'application'
 
 sourceCompatibility = 1.8
 
-mainClassName = 'simple.caller.callee.A'
+mainClassName = 'simple.caller.callee.Main'
 
 
 task fatjar(type: Jar) {
@@ -14,7 +14,7 @@ task fatjar(type: Jar) {
     manifest {
         attributes 'Implementation-Title': 'A simple caller callee test program',
                    'Implementation-Version': version,
-                   'Main-Class': 'simple.caller.callee.A'
+                   'Main-Class': 'simple.caller.callee.Main'
     }    
     from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
     with jar

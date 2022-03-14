@@ -1,8 +1,8 @@
 package simple.caller.callee;
 
 public class A {
-    public static void main(String[] args) {
+    public void foo() {
         B b = new B();
-        b.foo();
+        b.bar();
     }
 }

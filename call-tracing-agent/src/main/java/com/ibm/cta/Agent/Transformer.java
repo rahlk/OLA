@@ -24,7 +24,8 @@ public class Transformer implements ClassFileTransformer {
             System.err.println("Call-Trace-Agent: Transformed bytecode is saved under \"" + outDir + "\"");
     }
 
-    public static synchronized void premain(String args, Instrumentation inst) throws ClassNotFoundException, IOException {
+    public static synchronized void premain(String args, Instrumentation inst)
+            throws ClassNotFoundException, IOException {
         Transformer t = new Transformer();
         inst.addTransformer(t);
         if (inst.isNativeMethodPrefixSupported()) {
@@ -35,12 +36,17 @@ public class Transformer implements ClassFileTransformer {
     }
 
     private static boolean isLibraryClass(String name) {
-        return !name.contains("org/springframework/samples/petclinic");
+        return name.contains("java") || // <- All java.* classes
+                name.contains("sun") || // <- All sun.* classes
+                name.contains("com/ibm/cta"); // <- All instrumenter classes
     }
 
     public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined,
-                            ProtectionDomain pd, byte[] classFile) throws IllegalClassFormatException {
-        if (isLibraryClass(className)) return null;
+            ProtectionDomain pd, byte[] classFile) throws IllegalClassFormatException {
+
+        if (isLibraryClass(className))
+            return null;
+
         debugMessage("Transforming: " + className + " [loader=" + loader + ']');
 
         // Save original bytecode.
@@ -77,7 +83,7 @@ public class Transformer implements ClassFileTransformer {
 
     // Check bytecode using ASM's CheckClassAdapter.
     private void checkBytecode(ClassLoader loader, String className,
-                               byte[] bc, int wFlags) {
+            byte[] bc, int wFlags) {
         ClassReader debugReader = new ClassReader(bc);
         ClassWriter debugWriter = new ContextClassWriter(loader, wFlags);
         try {
@@ -111,6 +117,7 @@ public class Transformer implements ClassFileTransformer {
             System.err.flush();
         }
     }
+
     public static void stopWithError(String msg) {
         System.err.println(CTXT_AGENT + msg);
         System.exit(-1);
