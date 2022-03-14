@@ -16,10 +16,10 @@ Root project 'OLA'
     
     +--- Project ':object-lifecycle-agent'   --> This agent instruments tracks the objects saved on the heap and 
                                                  generates lifecycle information (i.e., time between allocation and 
-                                                 garbage collections) in a json file. Inspired by https://9m.no/ﷄ뺏
+                                                 garbage collections) in a json file. Inspired by https://bit.ly/3w1Z1WD
     
     +--- Project ':test'                     --> This are just a set of test programs to test the working of above 
-                                                 agents. Inspired by and extended from https://9m.no/䎁᎑
+                                                 agents. Inspired by and extended from https://bit.ly/35UBRa8
 ```
 
 ## Usage
@@ -33,5 +33,5 @@ Root project 'OLA'
 - To attach the agent to a jar called TEST.jar, assumming your classpath environment variable is $CLASSPATH, use
 
   ```sh
-  java -javaagent:/path/to/OLA/call-tracing-agent/build/libs/ctaagent-1.0-SNAPSHOT.jar -cp /path/to/OLA/call-tracing-agent/build/libs/ctaagent-1.0-SNAPSHOT.jar:$CLASSPAT -jar /path/to/TEST.jar
+  java -javaagent:/path/to/OLA/call-tracing-agent/build/libs/ctaagent-1.0-SNAPSHOT.jar -cp /path/to/OLA/call-tracing-agent/build/libs/ctaagent-1.0-SNAPSHOT.jar:$CLASSPATH -jar /path/to/TEST.jar
   ```
