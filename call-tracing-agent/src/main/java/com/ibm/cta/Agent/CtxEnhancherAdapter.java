@@ -187,6 +187,11 @@ public class CtxEnhancherAdapter extends ClassVisitor {
             super.visitVarInsn(opcode, var);
         }
 
+        /**
+         * When encountering instructions that call a method, we intercept them to track
+         * the arguments, and generate
+         * a call graph edge.   
+         */
         @Override
         public void visitMethodInsn(int opcode,
                 String owner,
@@ -255,6 +260,100 @@ public class CtxEnhancherAdapter extends ClassVisitor {
             debugMessage("End of " + getMethName() +
                     ", instrNum = " + instrNum);
             super.visitEnd();
+        }
+
+        /**
+         * A data structure to collect the arguments passed to a method call
+         */
+        static class ArgCollector {
+            private final Object[] args;
+            private int index;
+
+            public ArgCollector(int length) {
+                this.args = new Object[length];
+                this.index = length;
+            }
+
+            public ArgCollector push(Object o) {
+                args[--index] = o;
+                return this;
+            }
+
+            public Object pop() {
+                return args[index++];
+            }
+
+            public static ArgCollector push(boolean a, ArgCollector c) {
+                return c.push(a);
+            }
+
+            public static ArgCollector push(byte a, ArgCollector c) {
+                return c.push(a);
+            }
+
+            public static ArgCollector push(char a, ArgCollector c) {
+                return c.push(a);
+            }
+
+            public static ArgCollector push(short a, ArgCollector c) {
+                return c.push(a);
+            }
+
+            public static ArgCollector push(int a, ArgCollector c) {
+                return c.push(a);
+            }
+
+            public static ArgCollector push(long a, ArgCollector c) {
+                return c.push(a);
+            }
+
+            public static ArgCollector push(float a, ArgCollector c) {
+                return c.push(a);
+            }
+
+            public static ArgCollector push(double a, ArgCollector c) {
+                return c.push(a);
+            }
+
+            public static ArgCollector push(Object a, ArgCollector c) {
+                return c.push(a);
+            }
+
+            public boolean popZ() {
+                return (boolean) pop();
+            }
+
+            public byte popB() {
+                return (byte) pop();
+            }
+
+            public char popC() {
+                return (char) pop();
+            }
+
+            public short popS() {
+                return (short) pop();
+            }
+
+            public int popI() {
+                return (int) pop();
+            }
+
+            public long popJ() {
+                return (long) pop();
+            }
+
+            public float popF() {
+                return (float) pop();
+            }
+
+            public double popD() {
+                return (double) pop();
+            }
+
+            public Object[] toArray() {
+                return args;
+            }
         }
     }
 }
