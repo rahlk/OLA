@@ -1,4 +1,4 @@
-# JAVA ASM agents for call tracing and object mining
+# JAVA agents for call tracing and object mining
 
 _TODO: Say what, why, how, etc._
 
