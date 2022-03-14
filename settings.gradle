@@ -9,3 +9,4 @@
 
 include 'object-lifecycle-agent'
 include 'call-tracing-agent'
+include 'test'

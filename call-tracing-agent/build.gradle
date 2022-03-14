@@ -1,4 +1,4 @@
-group 'com.ibm'
+group 'com.ibm.cta'
 version '1.0-SNAPSHOT'
 
 apply plugin: 'java'
@@ -9,16 +9,15 @@ repositories {
     mavenCentral()
 }
 
-
 task fatjar(type: Jar) {
-    baseName = 'cta_agent'
+    baseName = 'ctaagent'
     manifest {
         attributes 'Implementation-Title': 'Gradle Jar File Example',
                 'Implementation-Version': version,
                 'Manifest-Version': '1.0',
                 'Agent-Class': 'com.ibm.cta.Agent.Transformer',
                 'Premain-Class': 'com.ibm.cta.Agent.Transformer',
-                'Boot-Class-Path': 'cta_agent-'+ version + '.jar' + ":   ",
+                'Boot-Class-Path': 'ctaagent-'+ version + '.jar' + ":   ",
                 'Can-Set-Native-Method-Prefix': 'true',
                 'Can-Retransform-Classes': 'true'
 

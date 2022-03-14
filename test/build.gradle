@@ -1,0 +1,21 @@
+group 'simple.caller.callee'
+version '1.0-SNAPSHOT'
+
+apply plugin: 'java'
+apply plugin: 'application'
+
+sourceCompatibility = 1.8
+
+mainClassName = 'simple.caller.callee.A'
+
+
+task fatjar(type: Jar) {
+    baseName = 'caller-callee-example'
+    manifest {
+        attributes 'Implementation-Title': 'A simple caller callee test program',
+                   'Implementation-Version': version,
+                   'Main-Class': 'simple.caller.callee.A'
+    }    
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+}
